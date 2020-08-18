@@ -8,7 +8,7 @@ HX711ADC scale(A1, A0);
 
 /******* CONFIG *********/
 static bool CALIBRATE = false;
-static float SCALE = 152;  // Aquired by running calibration mode
+static float SCALE = -24;  // Aquired by running calibration mode
 static int N_READINGS = 10;
 static unsigned int TARE_INTERVAL = 50;  // Number of low-res loops before taring
 static double HIGHRES_CHANGE = 100;  // Grams changed in reading to trigger high-res
@@ -17,7 +17,6 @@ static byte server[] = { 192, 168, 1, 2 };
 static int port = 2003;
 /************************/
 
-float prev_unit = -1;
 time_t highres_start = 0;
 unsigned int n_lowres = 0;
 
@@ -36,11 +35,21 @@ void setup() {
     }
   
     Particle.function("tare", cloud_tare);
+    Particle.function("scale", cloud_scale);
 }
 
 int cloud_tare(String extra) {
     Particle.publish("tare-cloud");
     scale.tare(N_READINGS);
+    return 0;
+}
+
+int cloud_scale(String extra) {
+    int units_expected = extra.toInt();
+    int value = scale.get_value(N_READINGS);
+    float scale_value = value / units_expected;
+    scale.set_scale(scale_value);
+    Particle.publish("scale-cloud", String(scale_value).c_str());
     return 0;
 }
 
@@ -79,16 +88,11 @@ void send_long(char* field, long value) {
 
 int calculate_dt(float unit) {
     time_t now = Time.now();
-    float change = unit - prev_unit;
-    if (prev_unit <= 0) {
-        change = 0;
-    }
-    prev_unit = unit;
     
     if (highres_start != 0 && now - highres_start <= HIGHRES_TIMEOUT) {
         Particle.publish("highres-staying");
         return 500;
-    } else if (change > HIGHRES_CHANGE) {
+    } else if (unit > HIGHRES_CHANGE) {
         Particle.publish("highres-entering");
         highres_start = now;
         n_lowres = 0;
