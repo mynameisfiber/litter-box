@@ -1,5 +1,6 @@
 #include "HX711ADC.h"
 #include <math.h>
+#include "HttpClient.h"
 
 // HX711.DOUT	- pin #A1
 // HX711.PD_SCK	- pin #A0
@@ -14,14 +15,24 @@ static unsigned int TARE_INTERVAL = 50;  // Number of low-res loops before tarin
 static double HIGHRES_CHANGE = 0.25;  // Percent change in reading to trigger high-res
 static double HIGHRES_TIMEOUT = 10;  // Number of seconds to stay in high-res mode
 static byte server[] = { 192, 168, 1, 2 }; 
-static int port = 2003;
+static char litter_box_host[] = "192.168.1.2";
+static int graphite_port = 2003;
+static int litter_box_port = 11773;
 /************************/
 
 time_t highres_start = 0;
 unsigned int n_lowres = 0;
 float unit_last = 0;
 
-TCPClient client;
+TCPClient client_graphite;
+HttpClient client_litter_box;
+
+http_header_t headers[] = {
+    { "Accept" , "*/*"},
+    { NULL, NULL } // NOTE: Always terminate headers will NULL
+};
+http_request_t request;
+http_response_t response;
 
 void setup() {
     Particle.publish("starting");
@@ -60,18 +71,31 @@ void send_buffer(String buffer) {
         return;
     }
     
-    if (!client.status()) {
+    if (!client_graphite.status()) {
         Particle.publish("graphite-connection-started");
-        client.connect(server, port);
+        client_graphite.connect(server, graphite_port);
     }
     
-    if (client.status())
+    if (client_graphite.status())
     {
-        Particle.publish("sending-to-server", buffer.c_str());
-        client.println(buffer.c_str());
-        client.flush();
+        client_graphite.println(buffer.c_str());
+        client_graphite.flush();
     } else {
         Particle.publish("graphite-connection-failed");
+    }
+}
+
+void send_litter_box(float value) {
+    request.hostname = litter_box_host;
+    request.port = litter_box_port;
+    String path = String::format("/measure?value=%f", value);
+    request.path = path.c_str();
+
+    client_litter_box.get(request, response, headers);
+    if (response.status == 200) {
+        Particle.publish("litter_box_write_success", response.body.c_str());
+    } else {
+        Particle.publish("litter_box_write_failure", response.body.c_str());
     }
 }
 
@@ -135,6 +159,7 @@ void loop() {
     
     float units = scale.reading_to_units(reading);
     send_float("raw.units", units);
+    send_litter_box(units);
     
     delay(calculate_dt(units));
 }
