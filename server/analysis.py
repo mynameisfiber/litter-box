@@ -35,7 +35,7 @@ class Analysis:
         if sample < -self.hard_threshold and sample < average * (1 - self.threshold):
             # Litter box taken off of sensor
             return "cleaning"
-        elif sample > hard_threshold and sample > average * (1 + self.threshold):
+        elif sample > self.hard_threshold and sample > average * (1 + self.threshold):
             # Cat is in the litterbox
             self.start_time = datetime.now()
         elif self.start_time:
@@ -66,9 +66,10 @@ class Analysis:
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, "ab+") as fd:
             fd.write(json.dumps(sample))
+            fd.write(f'\n')
 
     def _data_filename(self, time):
-        return Path(f"{self.data_path}/{time.year}/{time.month}/{time.day}.jsonl")
+        return Path(f"{self.data_path}/{time.year:04d}/{time.month:02d}/{time.day:02d}.jsonl")
 
     def load_date(self, date):
         try:
