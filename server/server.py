@@ -49,7 +49,9 @@ def data(start_time=None, end_time=None):
         except ParserError:
             return abort(403, "Invalid end time")
     result = list(analysis.get_data(start_time, end_time))
-    return Response(response=json.dump(result), status=200, mimetype="application/json")
+    return Response(
+        response=json.dumps(result), status=200, mimetype="application/json"
+    )
 
 
 if __name__ == "__main__":
