@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import os
 
-from flask import Flask, request, abort
+from flask import Flask, Response, request, abort
 from dateutil.parser import ParserError, parse as dateparser
 import orjson as json
 
@@ -49,7 +49,7 @@ def data(start_time=None, end_time=None):
         except ParserError:
             return abort(403, "Invalid end time")
     result = list(analysis.get_data(start_time, end_time))
-    return json.dumps(result)
+    return Response(response=json.dump(result), status=200, mimetype="application/json")
 
 
 if __name__ == "__main__":
