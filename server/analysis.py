@@ -66,7 +66,7 @@ class Analysis:
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, "ab+") as fd:
             fd.write(json.dumps(sample))
-            fd.write(f'\n')
+            fd.write(b'\n')
 
     def _data_filename(self, time):
         return Path(f"{self.data_path}/{time.year:04d}/{time.month:02d}/{time.day:02d}.jsonl")
