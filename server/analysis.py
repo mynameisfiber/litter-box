@@ -56,6 +56,7 @@ class Analysis:
         data.sort()
         median_weight = data[len(data) // 2]
         sample = {
+            "base_weight": self._buffer_average(),
             "mean_weight": mean_weight,
             "median_weight": median_weight,
             "start_time": start_time,
