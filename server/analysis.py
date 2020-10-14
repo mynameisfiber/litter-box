@@ -7,7 +7,7 @@ from collections import deque
 
 
 class Analysis:
-    def __init__(self, data_path="./data/", threshold=20, post_session_timeout=15, buffer_length=32, hard_threshold=100):
+    def __init__(self, data_path="./data/", threshold=200, post_session_timeout=15, buffer_length=32, hard_threshold=100):
         self.data_path = data_path
         self.threshold = threshold
         self.hard_threshold = hard_threshold
@@ -59,6 +59,7 @@ class Analysis:
                 self.start_time = None
                 self.end_time = None
                 self.post_session_buffer.clear()
+                self.data.clear()
             else:
                 self.post_session_buffer.append(sample)
 
